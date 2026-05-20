@@ -30,10 +30,71 @@ def close_db(error):            # catch any error that occurs during request han
     if db is not None:          # if a db connection was established, then only close.
         db.close()              # close the db connection.
 
+# login required decorator
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get("user_id") is None:
+            return redirect("/login")
+        return f(*args, **kwargs)
+    return decorated_function
 
+# home page route
 @app.route("/")
+@login_required
 def index():
     db = get_db() #get database connection
     tasks = db.execute("SELECT * FROM tasks WHERE user_id = ?", 
                       (session["user_id"],)).fetchall()
     return render_template("index.html", tasks=tasks) 
+
+# route for user registration
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username")
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        # Hash the password
+        hashed_password = generate_password_hash(password)
+
+        # Insert the new user into the database
+        db = get_db()
+        try:
+            db.execute("INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+                       (username, email, hashed_password))
+            db.commit()
+            return redirect("/login")
+        except sqlite3.IntegrityError:
+            return render_template("register.html", error="Username or email already exists")
+
+    return render_template("register.html")
+
+# route for user login
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        db = get_db()
+        user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+        if user and check_password_hash(user["password"], password):
+            session["user_id"] = user["id"]
+            return redirect("/")
+        else:
+            return render_template("login.html", error="Invalid username or password")
+    return render_template("login.html")
+
+# route for user logout
+
+def logout():
+    # Clear the user session to log out the user.
+    session.clear()
+    # Redirect the user to the login page.
+    return redirect("/login")
+
+if __name__ == "__main__":
+    app.run(debug=True)
