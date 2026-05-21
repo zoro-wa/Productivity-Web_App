@@ -100,7 +100,57 @@ def add_task():
     db.commit()
     return redirect("/")
 
-# route for user logout
+@app.route("/delete_task/<int:task_id>", methods=["POST"])
+@login_required
+def delete_task(task_id):
+    db = get_db()
+    db.execute("DELETE FROM tasks WHERE id = ? AND user_id = ?", (task_id, session["user_id"]))
+    db.commit()
+    return redirect("/")
+
+@app.route("/complete_task/<int:task_id>",methods=["POST"])
+@login_required
+def complete_task(task_id):
+    db = get_db()
+    db.execute("UPDATE tasks SET completed = 1 WHERE id = ? AND user_id = ?", (task_id, session["user_id"]))
+    db.commit()
+    return redirect("/")
+
+@app.route("/incomplete_task/<int:task_id>", methods=["POST"])
+@login_required
+def incomplete_task(task_id):
+    db = get_db()
+    db.execute("UPDATE tasks SET completed = 0 WHERE id = ? AND user_id = ?", (task_id, session["user_id"]))
+    db.commit()
+    return redirect("/")
+
+# onify(tasks_list)
+
+# @app.route("/tasks/<int:task_id>", methods=["GET"])
+# @login_required
+# def get_task(task_id):
+#     db = get_db()
+#     task = db.execute("SELECT * FROM tasks WHERE id = ? AND user_id = ?", (task_id, session["user_id"])).fetchone()
+#     if task:
+#         return jsonify(dict(task)) # convert sqlite3.Row object to dictionary for JSON serialization
+#     else:
+#         return jsonify({"error": "Task not found"}), 404
+
+@app.route("history")
+@login_required
+def history():
+    db = get_db()
+    completed_tasks = db.execute("SELECT * FROM tasks WHERE user_id = ? AND completed = 1 ORDER BY created_at DEC")S", (session["user_id"],)).fetchall()
+    return render_template(history.html, tasks=completed_tasks)
+
+@app.route("/clear_history", methods=["POST"])
+@login_required
+def clear_history():
+    db = get_db()
+    db.execute("DELETE FROM tasks WHERE user_id = ? AND completed = 1", (session["user_id"],))
+    db.commit()
+    return redirect("/history")
+
 @app.route("/logout")
 def logout():
     # Clear the user session to log out the user.
