@@ -88,8 +88,20 @@ def login():
             return render_template("login.html", error="Invalid username or password")
     return render_template("login.html")
 
-# route for user logout
+@app.route("/add_task", methods=["POST"])
+@login_required
+def add_task():
+    title = request.form.get("title")
+    description = request.form.get("description")
 
+    db = get_db()
+    db.execute("INSERT INTO tasks (user_id, title, description) VALUES (?, ?, ?)",
+               (session["user_id"], title, description))
+    db.commit()
+    return redirect("/")
+
+# route for user logout
+@app.route("/logout")
 def logout():
     # Clear the user session to log out the user.
     session.clear()
