@@ -2,7 +2,7 @@ import requests
 import sqlite3
 
 from functools import wraps
-from flask import session, redirect, g
+from flask import session, redirect, g, abort
 
 DATABASE = "productivity.db"
 
@@ -39,7 +39,7 @@ def get_motivational_quote():
 
     def get_tasks_for_user(user_id):
         db = get_db()
-        tasks = db.execute("SELECT * FROM tasks WHERE user_id = ?", (user_id,))..fetchall()
+        tasks = db.execute("SELECT * FROM tasks WHERE user_id = ?", (user_id,)).fetchall()
 
         if not tasks:
             abort(404, description="No tasks found for this user")
@@ -53,3 +53,10 @@ def get_motivational_quote():
         if len(description) > 500:
             return False, "Description must be less than 500 characters."
         return True, ""
+
+    def get_task_by_id(task_id, user_id):
+        db = get_db()
+        task = db.execute("SELECT * FROM tasks WHERE id = ? AND user_id = ?", (task_id, user_id)).fetchone()
+        if task is None:
+            abort(404, description = "Task not found")
+        return task

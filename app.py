@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, redirect, session, url_for, j
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+from functools import wraps
 load_dotenv()
 import requests
 
@@ -56,6 +57,9 @@ def register():
         username = request.form.get("username")
         email = request.form.get("email")
         password = request.form.get("password")
+
+        if not username or not email or not password:
+            return render_template("register.html", error="All fields are required ")
 
         # Hash the password
         hashed_password = generate_password_hash(password)
@@ -136,12 +140,12 @@ def incomplete_task(task_id):
 #     else:
 #         return jsonify({"error": "Task not found"}), 404
 
-@app.route("history")
+@app.route("/history")
 @login_required
 def history():
     db = get_db()
-    completed_tasks = db.execute("SELECT * FROM tasks WHERE user_id = ? AND completed = 1 ORDER BY created_at DEC")S", (session["user_id"],)).fetchall()
-    return render_template(history.html, tasks=completed_tasks)
+    completed_tasks = db.execute("SELECT * FROM tasks WHERE user_id = ? AND completed = 1 ORDER BY created_at DESC", (session["user_id"],)).fetchall()
+    return render_template("history.html", tasks=completed_tasks)
 
 @app.route("/clear_history", methods=["POST"])
 @login_required
