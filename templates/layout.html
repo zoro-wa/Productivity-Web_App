@@ -12,11 +12,18 @@
     </head>
     <body class="bg-light">
         
-        <nav class="navbar navbar-expand-lg bg-white border-bottom bg-dark">
+        <nav class="navbar navbar-expand-lg  border-bottom" style="background-color: var(--surface);">
             <div class="container-fluid">
-                <a class ="navbar navbar-brand fw-bold text-light" href="/">Productivity App</a>
+                <a class ="navbar-brand fw-bold" href="/" style="color: var(--text-primary);">Productivity App</a>
 
-                <div class="ms-auto">
+                <div class="ms-auto d-flex gap-2">
+                    {% if session.user_id %}
+                    <a href="/logout" class="btn btn-outline-secondary rounded-pill">Logout</a>
+                    {% else %}
+                    <a href="/login" class="btn btn-outline-primary rounded-pill">
+                        Login
+                    </a>
+                    {% endif %}
                     <button class="btn btn-outline-primary rounded-pill">
                         Profile
                     </button>
