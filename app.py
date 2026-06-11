@@ -6,14 +6,24 @@ from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from functools import wraps
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
 load_dotenv()
 import requests
 
 # configure application
 app = Flask(__name__)
-
 # secret key for sessions
 app.secret_key = os.environ.get("SECRET_KEY")
+
+#email configuration
+app.config["MAIL_SERVER"] = "smtp.gmail.com"
+app.config["MAIL_PORT"] = 587
+app.config["MAIL_USE_TLS"] = False
+app.config["MAIL_USE_SSL"] = True
+app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
+app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
+mail = Mail(app)
 
 #configure sqlite3
 DATABASE = "productivity.db"
@@ -40,6 +50,67 @@ def login_required(f):
             return redirect("/login")
         return f(*args, **kwargs)
     return decorated_function
+
+
+# fetch motivational quote from API
+def fetch_quote():
+    try:
+        response = requests.get("https://zenquotes.io/api/random", timeout=5)
+        data = response.json()
+        return f'"{data[0]["q"]}" - {data[0]["a"]}'
+    except Exception as e:
+        print("Fetch Quote Failed", e)
+        return '"If u dont do it now, you will do it never."'
+        
+def check_and_send_reminders():
+    with app.app_context():
+        conn = sqlite3.connect(DATABASE)
+        conn.row_factory = sqlite3.Row
+        now = datetime.now().strftime("%Y-%m-%dT%H:%M")
+        due_tasks = conn.execute("""
+            SELECT tasks.id, tasks.title, tasks.description, tasks.due_at,
+                   users.email, users.username
+            FROM tasks
+            JOIN users ON tasks.user_id= users.id
+            WHERE tasks.reminded = 0
+              AND tasks.due_at IS NOT NULL
+              AND strftime('%Y-%m-%d %H:%M:%S', tasks.due_at) <= ?
+              AND tasks.completed = 0
+        """,(now,)).fetchall()
+
+        for task in due_tasks:
+            quote = fetch_quote()
+            try:
+                msg = Message(
+                    subject=f"⏰ Reminder: {task['title']}",
+                    sender=os.environ.get("MAIL_USERNAME"),
+                    recipients=[task["email"]]
+                )
+                msg.body = f"""Hi {task['username']},
+
+This is a reminder for your task: {task['title']}
+{f"Description: {task['description']}" if task['description'] else ""}
+
+Today's motivation:
+{quote}
+
+Believe it. Dattebayo! 💪
+"""
+               
+                mail.send(msg)
+            except Exception as e:
+                print(f"failed to send email for task {task['id']}: {e}")
+
+            conn.execute("UPDATE tasks SET reminded = 1 WHERE id = ?", (task["id"],))
+            conn.commit()
+        
+        conn.close()
+
+
+# Start scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(check_and_send_reminders, "interval", minutes=1)
+scheduler.start()        
 
 # home page route
 @app.route("/")
@@ -97,12 +168,43 @@ def login():
 def add_task():
     title = request.form.get("title")
     description = request.form.get("description")
+    due_at = request.form.get("due_at")
 
     db = get_db()
-    db.execute("INSERT INTO tasks (user_id, title, description) VALUES (?, ?, ?)",
-               (session["user_id"], title, description))
+    db.execute("INSERT INTO tasks (user_id, title, description, due_at) VALUES (?, ?, ?, ?)",
+               (session["user_id"], title, description, due_at))
     db.commit()
     return redirect("/")
+
+@app.route("/set_reminder/<int:task_id>", methods=["POST"])
+@login_required
+def set_reminder(task_id):
+    due_at = request.form.get("due_at")
+    db = get_db()
+    db.execute("UPDATE tasks SET due_at = ?, reminded = 0 WHERE id = ? AND user_id = ?", (due_at, task_id, session["user_id"]))
+    db.commit()
+    return redirect("/")
+
+@app.route("/check_reminders")
+@login_required
+def check_reminders():
+    db = get_db()
+    now = datetime.now().strftime("%Y-%m-%dT%H:%M")
+    due = db.execute("""
+        SELECT id, title FROM tasks
+        WHERE user_id = ? AND reminded = 0 AND due_at IS NOT NULL
+        AND strftime('%Y-%m-%d %H:%M', due_at) <= ?
+        AND completed = 0
+    """, (session["user_id"], now)).fetchall()
+
+    results = []
+    for task in due:
+        quote = fetch_quote()
+        results.append({"id": task["id"], "title": task["title"], "quote": quote })
+        db.execute("UPDATE tasks SET reminded = 1 WHERE id = ?", (task["id"],))
+    db.commit()
+
+    return jsonify(results)
 
 @app.route("/delete_task/<int:task_id>", methods=["POST"])
 @login_required

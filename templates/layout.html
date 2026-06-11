@@ -37,6 +37,32 @@
         </main>
         
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-    
+        
+        <script>
+            if ("Notification" in window) {
+                Notification.requestPermission();
+            }
+            
+            
+            function checkReminders() {
+                fetch("/check_reminders")
+                    .then(res => res.json())
+                    .then(tasks => {
+                        tasks.forEach(task => {
+                            if (Notification.permission === "granted") {
+                                new Notification("⏰ Task Reminder", {
+                                    body:task.title,
+                                    icon: "/static/favicon.ico"
+                                });
+                            }
+                        });
+                    })
+                    .catch(()  => {});
+            }
+
+            checkReminders();
+            setInterval(checkReminders, 60000);
+        </script>
+
     </body>
 </html>

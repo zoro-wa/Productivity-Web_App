@@ -3,18 +3,97 @@
 {% block content %}
 
 <div class="dashboard-container">
-    <h1 class="text-center mb-5">
-        Worship Discipline. Reach your peak.
-    </h1>
 
-    <p class="lead text-secondary">
-        Organize tasks, track progress, and achieve your goals with our intuitive productivity app. Stay focused, manage your time effectively, and boost your productivity to reach new heights.
-    </p>
+    <div class="mb-5">
+        <h1 class="mb-1">Your Tasks</h1>
+        <p style="color: var(--text-muted);">Stay In Discipline, Stay In Shape.</p>
+    </div>
 
-    <a href="/tasks" class="btn btn-primary btn-lg rounded-pill px-4">
-        View Tasks
-    </a>
+    <div class="card p-4 mb-4">
+        <h2 class="section-title">Add a Task</h2>
+        <form action="/add_task" method="POST">
+            <div class="mb-3">
+                <input type="text" name="title" class="form-control" placeholder="Task Title" required>
+            </div>
+            <div class="mb-3">
+                <textarea name="description" class="form-control" placeholder="Description (optional)" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" style="color: var(--text-muted); font-size: 0.9rem;">Reminder Time (optional)</label>
+                <input type="datetime-local" name="due_at" class="form-control">
+            </div>
+            <button type="submit" class="btn rounded-pill px-4" style="background-color: var(--accent); color: white; border: none;">
+                Add Task
+            </button>         
+        </form>
+    </div>
 
+    {% if tasks %}
+    <h2 class="section-title">Pending</h2>
+    <div class="d-flex flex-column gap-3 mb-5">
+        {% for task in tasks %}
+        {% if not task['completed'] %}
+        <div class="card p-3 d-flex flex-row align-items-start gap-3">
+            <div class="flex-grow-1">
+                <p class="fw-semibold mb-1">{{ task['title'] }}</p>
+                {% if task['description'] %}
+                <p class="mb-0" style="color: var(--text-muted); font-size: 0.87rem">{{ task['description'] }}</p>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                <form action="/complete_task/{{ task['id'] }}" method="POST">
+                    <button type="submit" class="btn btn-sm rounded-pill" style="background: var(--accent); border: none">
+                        Done
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <h2 class="section-title">Completed</h2>
+    <div class="d-flex flex-column gap-3">
+        {% for task in tasks %}
+        {% if task['completed'] %}
+        <div class="card p-3 d-flex flex-row align-items-start gap-3" style="opacity: 0.57;">
+            <div class="flex-grow-1">
+                <p class="fw-semibold mb-1" style="text-decoration: line-through;">{{ task['title'] }}</p>
+                {% if task['description'] %}
+                <p class="mb-0" style="color: var(--text-muted); font-size:0.85rem;">{{ task['description'] }}</p>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                <form action="/incomplete_task/{{ task[ 'id' ]}}" method="POST">
+                    <button type="submit" class="btn btn-sm rounded-pill" style="background: var(--border); color: var(--text-muted); border: none;">      
+                        Undo
+                    </button>
+                </form>
+                <form action="/delete_task/{{ task['id'] }}" method="POST">
+                    <button type="submit" class="btn btn-sm rounded-pill" style="background: #fdecea; color: #c0392b; border: none;">
+                        Delete
+                    </button>
+                </form>
+<!--   
+                <form action="/set_reminder/{{ task['id']}}" method="POST" class="d-flex align-items-center gap-2 mt-2">
+                    <input type="datetime-local" name="due_at" class="form-control form-control-sm" style="max-width: 200px;"
+                             {% if task['due_at'] %} value="{{ task['due_at'][:16]}}" {% endif %} required>
+                    <button type="submit" class="btn btn-sm rounded-pill" style="background: var(--acccent-light); border: none;">
+                        Set Reminder
+                    </button>"             
+                </form> -->
+
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="text-center py-5" style="color: var(--text-muted);">
+        <p class="fs-5">No tasks yet. Add one to start the grind.</p>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}       
 
