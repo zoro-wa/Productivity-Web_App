@@ -19,14 +19,13 @@
                 <div class="ms-auto d-flex gap-2">
                     {% if session.user_id %}
                     <a href="/logout" class="btn btn-outline-secondary rounded-pill">Logout</a>
+                    <a href="/profile" class="btn btn-outline-primary rounded-pill">Profile</a>
                     {% else %}
                     <a href="/login" class="btn btn-outline-primary rounded-pill">
                         Login
                     </a>
                     {% endif %}
-                    <button class="btn btn-outline-primary rounded-pill">
-                        Profile
-                    </button>
+        
                 </div>
             </div>
         </nav>
@@ -60,7 +59,7 @@
                     .catch(()  => {});
             }
 
-            checkReminders();
+            // checkReminders();
             setInterval(checkReminders, 60000);
         </script>
 

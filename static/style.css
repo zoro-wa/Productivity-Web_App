@@ -48,7 +48,7 @@ p {
     margin-bottom: 1rem;
 }
 
-text-muted {
+.text-muted {
     color: var(--text-muted);
 }
 
@@ -94,4 +94,50 @@ text-muted {
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
+}
+
+/* Profile */
+.profile-avatar-img {
+    width: 90px;
+    height: 90px;
+    border-radius: 52%;
+    object-fit: cover;
+    border: 3.5px solid var(--accent);
+}
+
+.profile-avatar-placeholder {
+    width: 90px;
+    height: 90px;
+    border-radius: 52%;
+    background: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-weight: 650;
+    border: 3px solid var(--accent);
+}
+
+.profile-username {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.profile-email {
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.stat-number {
+    color: var(--accent);
+    font-size: 2rem;
+    font-weight: 650;
+    margin: 0;
+}
+
+.stat-label {
+    color: var(--text-muted);
+    margin: 0;
+    font-size: 0.9rem;
 }

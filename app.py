@@ -19,10 +19,11 @@ app.secret_key = os.environ.get("SECRET_KEY")
 #email configuration
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
-app.config["MAIL_USE_TLS"] = False
-app.config["MAIL_USE_SSL"] = True
+app.config["MAIL_USE_TLS"] = True
+app.config["MAIL_USE_SSL"] = False
 app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
 app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
+app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_USERNAME")
 mail = Mail(app)
 
 #configure sqlite3
@@ -51,6 +52,39 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.route("/profile")
+@login_required
+def profile():
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE id = ?",(session["user_id"],)).fetchone()
+    task_count = db.execute("SELECT COUNT(*) FROM tasks WHERE user_id = ?", (session["user_id"],)).fetchone()[0]
+    completed_count = db.execute("SELECT COUNT(*) FROM tasks WHERE user_id = ? AND completed = 1", (session["user_id"],)).fetchone()[0]
+    return render_template("profile.html", user=user, task_count=task_count, completed_count=completed_count)
+
+
+@app.route("/upload_profile_pic", methods=["POST"])
+@login_required
+def upload_profile_pic():
+    if "profile_pic" not in request.files:
+        return redirect("/profile")
+    
+    file = request.files["profile_pic"]
+    if file.filename == "":
+        return redirect("/profile")
+    
+
+    #Save file with user_id as filename to avoid conflicts
+    ext = file.filename.rsplit(".", 1)[-1].lower()
+    if ext not in ["jpg", "jpeg", "png", "gif", "webp"]:
+        return redirect("/profile")
+    
+    filename = f"profile_{session['user_id']}.{ext}"
+    file.save(os.path.join("static/uploads", filename))
+    
+    db = get_db()
+    db.execute("UPDATE users SET profile_pic = ? WHERE id = ?", (filename, session["user_id"]))
+    db.commit()
+    return redirect("/profile")
 
 # fetch motivational quote from API
 def fetch_quote():
@@ -74,7 +108,7 @@ def check_and_send_reminders():
             JOIN users ON tasks.user_id= users.id
             WHERE tasks.reminded = 0
               AND tasks.due_at IS NOT NULL
-              AND strftime('%Y-%m-%d %H:%M:%S', tasks.due_at) <= ?
+              AND tasks.due_at <= ?
               AND tasks.completed = 0
         """,(now,)).fetchall()
 
@@ -192,8 +226,8 @@ def check_reminders():
     now = datetime.now().strftime("%Y-%m-%dT%H:%M")
     due = db.execute("""
         SELECT id, title FROM tasks
-        WHERE user_id = ? AND reminded = 0 AND due_at IS NOT NULL
-        AND strftime('%Y-%m-%d %H:%M', due_at) <= ?
+        WHERE user_id = ? AND browser_reminded = 0 AND due_at IS NOT NULL
+        AND due_at <= ?
         AND completed = 0
     """, (session["user_id"], now)).fetchall()
 
@@ -201,7 +235,7 @@ def check_reminders():
     for task in due:
         quote = fetch_quote()
         results.append({"id": task["id"], "title": task["title"], "quote": quote })
-        db.execute("UPDATE tasks SET reminded = 1 WHERE id = ?", (task["id"],))
+        db.execute("UPDATE tasks SET browser_reminded = 1 WHERE id = ?", (task["id"],))
     db.commit()
 
     return jsonify(results)
@@ -230,17 +264,7 @@ def incomplete_task(task_id):
     db.commit()
     return redirect("/")
 
-# onify(tasks_list)
 
-# @app.route("/tasks/<int:task_id>", methods=["GET"])
-# @login_required
-# def get_task(task_id):
-#     db = get_db()
-#     task = db.execute("SELECT * FROM tasks WHERE id = ? AND user_id = ?", (task_id, session["user_id"])).fetchone()
-#     if task:
-#         return jsonify(dict(task)) # convert sqlite3.Row object to dictionary for JSON serialization
-#     else:
-#         return jsonify({"error": "Task not found"}), 404
 
 @app.route("/history")
 @login_required
