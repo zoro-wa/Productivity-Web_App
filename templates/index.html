@@ -19,7 +19,7 @@
                 <textarea name="description" class="form-control" placeholder="Description (optional)" rows="3"></textarea>
             </div>
             <div class="mb-3">
-                <label class="form-label" style="color: var(--text-muted); font-size: 0.9rem;">Reminder Time (optional)</label>
+                <label class="form-label" style="color: var(--text-muted); font-size: 0.9rem;">Reminder Time </label>
                 <input type="datetime-local" name="due_at" class="form-control">
             </div>
             <button type="submit" class="btn rounded-pill px-4" style="background-color: var(--accent); color: white; border: none;">
@@ -74,14 +74,6 @@
                         Delete
                     </button>
                 </form>
-<!--   
-                <form action="/set_reminder/{{ task['id']}}" method="POST" class="d-flex align-items-center gap-2 mt-2">
-                    <input type="datetime-local" name="due_at" class="form-control form-control-sm" style="max-width: 200px;"
-                             {% if task['due_at'] %} value="{{ task['due_at'][:16]}}" {% endif %} required>
-                    <button type="submit" class="btn btn-sm rounded-pill" style="background: var(--acccent-light); border: none;">
-                        Set Reminder
-                    </button>"             
-                </form> -->
 
             </div>
         </div>
@@ -90,8 +82,9 @@
     </div>
 
     {% else %}
-    <div class="text-center py-5" style="color: var(--text-muted);">
-        <p class="fs-5">No tasks yet. Add one to start the grind.</p>
+    <div class="empty-state">
+        <div class="empty-state-icon">✅</div>
+        <p class="fs-5">No tasks yet. Add one above to start the grind 💪.</p>
     </div>
     {% endif %}
 </div>

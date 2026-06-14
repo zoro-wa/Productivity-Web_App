@@ -4,7 +4,7 @@
 <div class="dashboard-container">
 
 
-    <div class="card p-4 mb-4">
+    <div class="card stat-card p-4 mb-4">
         <div class="d-flex align-items-center gap-4">
             {% if user['profile_pic'] %}
             <img src="/static/uploads/{{ user['profile_pic'] }}"
@@ -16,7 +16,7 @@
             </div>
             {% endif %}
             <div>
-                <h1 class="profile-username">{{ user['username'] }}</h1>
+                <h1 class="page-heading">{{ user['username'] }}</h1>
                 <p class="profile-email">{{ user['email'] }}</p>
             </div>
         </div>
@@ -37,7 +37,7 @@
         </div>
     </div>
     
-    <div class="card p-4">
+    <div class="card stat-card p-4">
         <h2 class="section-title">Update Profile Picture</h2>
         <form action="/upload_profile_pic" method="POST" enctype="multipart/form-data">
             <div class="mb-3">
